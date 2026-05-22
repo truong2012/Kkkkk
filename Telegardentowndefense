@@ -1,1 +1,89 @@
 
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
+
+local screenGui = Instance.new("ScreenGui", playerGui)
+screenGui.Name = "TeleportGui"
+screenGui.ResetOnSpawn = false
+
+-- Khung GUI chính
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 200, 0, 290)
+frame.Position = UDim2.new(0.5, -100, 0.5, -145)
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+frame.Active = true
+frame.Draggable = true -- Cách đơn giản nhất để cho phép kéo thả GUI
+
+-- Nút Bật/Tắt GUI (Giữ nguyên vị trí cố định)
+local toggleBtn = Instance.new("TextButton", screenGui)
+toggleBtn.Size = UDim2.new(0, 100, 0, 30)
+toggleBtn.Position = UDim2.new(0, 10, 0, 10)
+toggleBtn.Text = "Ẩn/Hiện GUI"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+toggleBtn.MouseButton1Click:Connect(function() frame.Visible = not frame.Visible end)
+
+-- Hiển thị tọa độ hiện tại
+local coordLabel = Instance.new("TextLabel", frame)
+coordLabel.Size = UDim2.new(0, 180, 0, 40)
+coordLabel.Position = UDim2.new(0, 10, 0, 10)
+coordLabel.Text = "X: 0 | Y: 0 | Z: 0"
+
+runService.RenderStepped:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local pos = char.HumanoidRootPart.Position
+        coordLabel.Text = string.format("X: %.1f | Y: %.1f | Z: %.1f", pos.X, pos.Y, pos.Z)
+    end
+end)
+
+-- Ô nhập liệu
+local xInput = Instance.new("TextBox", frame); xInput.Size = UDim2.new(0, 180, 0, 30); xInput.Position = UDim2.new(0, 10, 0, 60); xInput.PlaceholderText = "Nhập X"
+local yInput = Instance.new("TextBox", frame); yInput.Size = UDim2.new(0, 180, 0, 30); yInput.Position = UDim2.new(0, 10, 0, 95); yInput.PlaceholderText = "Nhập Y"
+local zInput = Instance.new("TextBox", frame); zInput.Size = UDim2.new(0, 180, 0, 30); zInput.Position = UDim2.new(0, 10, 0, 130); zInput.PlaceholderText = "Nhập Z"
+
+-- Nút Lấy tọa độ (Get Position)
+local getPosBtn = Instance.new("TextButton", frame)
+getPosBtn.Size = UDim2.new(0, 180, 0, 30)
+getPosBtn.Position = UDim2.new(0, 10, 0, 165)
+getPosBtn.Text = "Lấy tọa độ hiện tại"
+getPosBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+getPosBtn.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local pos = char.HumanoidRootPart.Position
+        xInput.Text = tostring(math.floor(pos.X))
+        yInput.Text = tostring(math.floor(pos.Y))
+        zInput.Text = tostring(math.floor(pos.Z))
+    end
+end)
+
+-- Nút Teleport Toggle
+local teleBtn = Instance.new("TextButton", frame)
+teleBtn.Size = UDim2.new(0, 180, 0, 40)
+teleBtn.Position = UDim2.new(0, 10, 0, 210)
+teleBtn.Text = "Teleport: OFF"
+teleBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+
+local isTeleOn = false
+local loopConnection
+
+teleBtn.MouseButton1Click:Connect(function()
+    isTeleOn = not isTeleOn
+    if isTeleOn then
+        teleBtn.Text = "Teleport: ON"
+        teleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        loopConnection = runService.RenderStepped:Connect(function()
+            local x, y, z = tonumber(xInput.Text), tonumber(yInput.Text), tonumber(zInput.Text)
+            local char = player.Character
+            if x and y and z and char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = CFrame.new(x, y, z)
+            end
+        end)
+    else
+        teleBtn.Text = "Teleport: OFF"
+        teleBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        if loopConnection then loopConnection:Disconnect() end
+    end
+end)
